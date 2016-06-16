@@ -1,6 +1,6 @@
 import math
 import numpy as np
-
+from numpy import linalg as la
 
 class Grasshopper(object):
 
@@ -28,12 +28,14 @@ class Grasshopper(object):
 					r[x-1] = pow(x, -alpha)
 
 		P = init_markov_chain(symmetric_matrix, size_of_matrix, r, self.lambda_weight)
-		stationary_distr = findStationaryDistr(P)
-		#g1 = findG1
+		stationary_distr = findStationaryDistr(P.T)
+		g1 = findIdxOfArgMax(stationary_distr)
+
+		#absorbing states then loop to find next stationary distr
 		#rankings = findGrank()
 
 
-
+#P = lambda*normalized(P) + (1-lambda)*1r^t
 def init_markov_chain(symmetric_matrix, size_of_matrix, r, lambda_weight):
 	normalized_matrix = normalize_by_row(symmetric_matrix)
 	normalized_matrix = lambda_weight * normalized_matrix
@@ -41,8 +43,15 @@ def init_markov_chain(symmetric_matrix, size_of_matrix, r, lambda_weight):
 	one_vec.fill(1.0)
 	return normalized_matrix + (1 - lambda_weight) * np.outer(one_vec,r)
 
+# π = P^T π
+def findStationaryDistr(matrix):
+	w, v = la.eig(matrix)
+	return v
 
-
+#g = argmax of stationary trans
+def findIdxOfArgMax(stationary_distr):
+	idx = np.argmax(stationary_distr)
+	return np.unravel_index(idx, stationary_distr.shape)
 
 def applyCosineThreshold(matrix, cosine_threshold, size_of_matrix):
 	for x in range(0, size_of_matrix):
