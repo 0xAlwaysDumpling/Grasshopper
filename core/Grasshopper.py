@@ -29,7 +29,7 @@ class Grasshopper(object):
 
 		P = init_markov_chain(symmetric_matrix, size_of_matrix, r, self.lambda_weight)
 		stationary_distr = findStationaryDistr(P.T)
-		g1 = findIdxOfArgMax(stationary_distr)
+		g1 = findArgMaxOfStationaryDistr(stationary_distr)
 
 		#absorbing states then loop to find next stationary distr
 		#rankings = findGrank()
@@ -46,12 +46,15 @@ def init_markov_chain(symmetric_matrix, size_of_matrix, r, lambda_weight):
 # π = P^T π
 def findStationaryDistr(matrix):
 	w, v = la.eig(matrix)
-	return v
+	j_stationary = np.argmin(abs(w-1.0))
+	p_stationary = v[:,j_stationary].real
+	p_stationary /= p_stationary.sum()
+	return p_stationary
 
 #g = argmax of stationary trans
-def findIdxOfArgMax(stationary_distr):
+def findArgMaxOfStationaryDistr(stationary_distr):
 	idx = np.argmax(stationary_distr)
-	return np.unravel_index(idx, stationary_distr.shape)
+	return idx
 
 def applyCosineThreshold(matrix, cosine_threshold, size_of_matrix):
 	for x in range(0, size_of_matrix):
