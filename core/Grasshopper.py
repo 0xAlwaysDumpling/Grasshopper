@@ -1,6 +1,9 @@
 import math
 import numpy as np
 from numpy import linalg as la
+from numpy.linalg import inv
+
+
 
 class Grasshopper(object):
 
@@ -15,6 +18,7 @@ class Grasshopper(object):
 
 	def textSummarization(self, matrix, r = None, cosine_threshold = 1.0):
 		size_of_matrix = len(matrx[0])
+		ranks = []
 		if cosine_threshold > 0:
 			matrix = applyCosineThreshold(matrix, cosine_threshold, size_of_matrix)
 		symmetric_matrix = reflectOverYX(matrix, size_of_matrix)
@@ -29,10 +33,34 @@ class Grasshopper(object):
 
 		P = init_markov_chain(symmetric_matrix, size_of_matrix, r, self.lambda_weight)
 		stationary_distr = findStationaryDistr(P.T)
-		g1 = findArgMaxOfStationaryDistr(stationary_distr)
+		g_index = findArgMaxOfMatrix(stationary_distr)
+		ranks.append(g_index)
+
+
+		while(len(ranks) < size_of_matrix):
+			Q = getUnRankedRows(P, g_index)
+			size_of_Q = size_of_matrix - len(ranks)
+			I = np.identity(size_of_Q)
+			N = inv(I-Q)
+			one_vec = np.zeros((size_of_Q,1))
+			one_vec.fill(1.0)
+			v = np.dot(N.T, one_vec) / (size_of_Q)
+			g_index = findArgMaxOfMatrix(v)
+			P = Q
+			#Offset of indices from Q is size_matrix - size of Q
+			ranks.append(size_of_matrix - size_of_Q + g_index)
+			
+		return ranks
+
+
 
 		#absorbing states then loop to find next stationary distr
 		#rankings = findGrank()
+
+def getUnRankedRows(p, idx):
+	Q = np.delete(p,idx,0)
+	Q = np.delete(p,idx,1)
+	return Q
 
 
 #P = lambda*normalized(P) + (1-lambda)*1r^t
@@ -52,8 +80,8 @@ def findStationaryDistr(matrix):
 	return p_stationary
 
 #g = argmax of stationary trans
-def findArgMaxOfStationaryDistr(stationary_distr):
-	idx = np.argmax(stationary_distr)
+def findArgMaxOfMatrix(matrix):
+	idx = np.argmax(matrix)
 	return idx
 
 def applyCosineThreshold(matrix, cosine_threshold, size_of_matrix):
